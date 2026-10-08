@@ -3,6 +3,7 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 import calendar
 import sqlite3
+from ml_model import predict_category
 
 from flask import (
     Flask,
@@ -10,7 +11,8 @@ from flask import (
     redirect,
     render_template,
     request,
-    url_for
+    url_for,
+    jsonify
 )
 
 # ----------------------------------------
@@ -488,6 +490,37 @@ def rupees(paise):
 # START APPLICATION
 # ----------------------------------------
 
+# ----------------------------------------
+# ML EXPENSE CATEGORY PREDICTION
+# ----------------------------------------
+
+@app.post("/predict-category")
+def predict_expense_category():
+
+    data = request.get_json(silent=True) or {}
+
+    description = data.get("description", "")
+
+    if not isinstance(description, str):
+        return jsonify({
+            "error": "Invalid description."
+        }), 400
+
+    if len(description) > 80:
+        return jsonify({
+            "error": "Description is too long."
+        }), 400
+
+    try:
+        result = predict_category(description)
+
+        return jsonify(result)
+
+    except ValueError as error:
+        return jsonify({
+            "error": str(error)
+        }), 400
+        
 init_db()
 
 if __name__ == "__main__":

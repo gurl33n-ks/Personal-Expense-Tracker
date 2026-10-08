@@ -365,6 +365,21 @@
 
           </select>
 
+          <button
+  type="button"
+  class="small-btn"
+  id="predictCategoryButton"
+  style="margin-top: 8px;"
+>
+  ✦ Suggest category with ML
+</button>
+
+<p class="muted" id="predictionResult"
+   aria-live="polite">
+  Enter a description and click to get
+  a category suggestion.
+</p>
+
 
           <label for="expense_date">
             Date
@@ -711,4 +726,72 @@
 </div>
 
 </body>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+  
+    const button = document.getElementById(
+      "predictCategoryButton"
+    );
+  
+    const titleInput = document.getElementById("title");
+    const categorySelect = document.getElementById("category");
+    const resultText = document.getElementById(
+      "predictionResult"
+    );
+  
+    button.addEventListener("click", async () => {
+  
+      const description = titleInput.value.trim();
+  
+      if (description.length < 3) {
+        resultText.textContent =
+          "Enter an expense description first.";
+        return;
+      }
+  
+      button.disabled = true;
+      resultText.textContent = "Analyzing description...";
+  
+      try {
+        const response = await fetch(
+          "/predict-category",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              description: description
+            })
+          }
+        );
+  
+        const data = await response.json();
+  
+        if (!response.ok) {
+          throw new Error(
+            data.error || "Prediction failed."
+          );
+        }
+  
+        categorySelect.value = data.category;
+  
+        resultText.textContent =
+          "Suggested category: " + data.category +
+          ". You can change it before saving.";
+  
+      } catch (error) {
+  
+        resultText.textContent =
+          "Could not predict category: " +
+          error.message;
+  
+      } finally {
+        button.disabled = false;
+      }
+  
+    });
+  
+  });
+  </script>
 </html>
