@@ -1,0 +1,714 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1">
+
+  <title>SmartSpend | Expense Intelligence</title>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="shell">
+
+  <!-- NAVIGATION -->
+
+  <header class="topbar">
+
+    <div class="brand">
+      <span class="brand-mark">↗️</span>
+      SmartSpend
+      <span class="brand-sub">
+        / Expense intelligence
+      </span>
+    </div>
+
+    <span class="demo-pill">● Local demo</span>
+
+  </header>
+
+
+  <main>
+
+    <!-- PAGE HEADING -->
+
+    <div class="heading">
+
+      <div>
+        <p class="eyebrow">
+          YOUR MONEY, MADE CLEAR
+        </p>
+
+        <h1>Spending overview</h1>
+
+        <p class="muted">
+          Track your expenses, notice unusual spending,
+          and stay on budget.
+        </p>
+      </div>
+
+      <span class="month-tag">{{ month }}</span>
+
+    </div>
+
+
+    <!-- FLASH MESSAGES -->
+
+    {% with messages =
+       get_flashed_messages(with_categories=true) %}
+
+      {% if messages %}
+
+        {% for kind, message in messages %}
+
+          <div class="flash {{ kind }}"
+               role="status">
+            {{ message }}
+          </div>
+
+        {% endfor %}
+
+      {% endif %}
+
+    {% endwith %}
+
+
+    <!-- DASHBOARD SUMMARY CARDS -->
+
+    <section class="stats">
+
+      <!-- MONTHLY SPENDING -->
+
+      <article class="panel highlight">
+
+        <p class="metric-label">
+          SPENT THIS MONTH
+        </p>
+
+        <div class="big-amount">
+          {{ total_paise | rupees }}
+        </div>
+
+        <p class="stat-help">
+          Across {{ category_totals | length }}
+          spending categories
+        </p>
+
+      </article>
+
+
+      <!-- MONTHLY BUDGET -->
+
+      <article class="panel">
+
+        <p class="metric-label">
+          MONTHLY BUDGET
+        </p>
+
+        <div class="big-amount">
+          {{ budget_paise | rupees }}
+        </div>
+
+        <form action="{{ url_for('update_budget') }}"
+              method="post"
+              class="budget-form">
+
+          <label for="budget">
+            Update budget (₹)
+          </label>
+
+          <div class="inline">
+
+            <input
+              id="budget"
+              name="budget"
+              type="number"
+              min="0.01"
+              step="0.01"
+              value="{{ '%.2f' | format(budget_paise / 100) }}"
+              required
+            >
+
+            <button type="submit"
+                    class="small-btn">
+              Save
+            </button>
+
+          </div>
+
+        </form>
+
+      </article>
+
+
+      <!-- BUDGET HEALTH SCORE -->
+
+      <article class="panel score-panel">
+
+        <p class="metric-label">
+          BUDGET HEALTH SCORE
+        </p>
+
+        <div class="score">
+          {{ score }}<span>/100</span>
+        </div>
+
+        <div class="track">
+          <div class="fill"
+               style="width:{{ score }}%">
+          </div>
+        </div>
+
+        <p class="stat-help">
+
+          {% if total_paise <= budget_paise %}
+            Within budget
+          {% else %}
+            Monthly budget exceeded
+          {% endif %}
+
+          · Based on budget remaining
+
+        </p>
+
+      </article>
+
+    </section>
+
+
+    <!-- FULL-WIDTH SPENDING FORECAST -->
+
+    <section class="panel forecast-panel">
+
+      <div class="section-head">
+
+        <div>
+
+          <p class="metric-label">
+            SMART SPENDING FORECAST
+          </p>
+
+          <h2>
+            Month-End Spending Prediction
+          </h2>
+
+        </div>
+
+        <span class="chip">
+          Forecast
+        </span>
+
+      </div>
+
+
+      {% if forecast_status == "no_data" %}
+
+        <p class="muted">
+          Add your first expense to generate
+          your spending forecast.
+        </p>
+
+      {% else %}
+
+        <div class="forecast-grid">
+
+          <!-- PROJECTED SPENDING -->
+
+          <div>
+
+            <p class="metric-label">
+              PREDICTED MONTH-END SPENDING
+            </p>
+
+            <div class="big-amount">
+              {{ forecast_paise | rupees }}
+            </div>
+
+          </div>
+
+
+          <!-- MONTHLY BUDGET COMPARISON -->
+
+          <div>
+
+            <p class="metric-label">
+              YOUR MONTHLY BUDGET
+            </p>
+
+            <div class="big-amount">
+              {{ budget_paise | rupees }}
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- FORECAST STATUS -->
+
+        {% if forecast_status == "over_budget" %}
+
+          <div class="forecast-warning">
+
+            ⚠ At your current spending rate,
+            you may exceed your monthly budget by
+
+            <strong>
+              {{ forecast_difference_paise | rupees }}
+            </strong>.
+
+          </div>
+
+        {% else %}
+
+          <div class="forecast-success">
+
+            ✓ You're on track!
+
+            Your projected spending is
+
+            <strong>
+              {{ forecast_difference_paise | rupees }}
+            </strong>
+
+            below your monthly budget.
+
+          </div>
+
+        {% endif %}
+
+
+        <!-- FORECAST EXPLANATION -->
+
+        <p class="forecast-note">
+
+          Estimated using your average daily spending
+          over {{ days_elapsed }} elapsed days
+          in a {{ days_in_month }}-day month.
+
+          Actual spending may differ.
+
+        </p>
+
+      {% endif %}
+
+    </section>
+
+
+    <!-- EXPENSE FORM AND SPENDING INSIGHTS -->
+
+    <section class="main-grid">
+
+
+      <!-- ADD EXPENSE -->
+
+      <article class="panel add-panel">
+
+        <h2>Add an expense</h2>
+
+        <p class="muted">
+          Record where your money goes.
+        </p>
+
+        <form action="{{ url_for('add_expense') }}"
+              method="post"
+              class="expense-form">
+
+          <label for="title">
+            Description
+          </label>
+
+          <input
+            id="title"
+            name="title"
+            maxlength="80"
+            placeholder="e.g. Coffee with friends"
+            required
+          >
+
+
+          <label for="amount">
+            Amount (₹)
+          </label>
+
+          <input
+            id="amount"
+            name="amount"
+            type="number"
+            min="0.01"
+            max="10000000"
+            step="0.01"
+            placeholder="e.g. 250"
+            required
+          >
+
+
+          <label for="category">
+            Category
+          </label>
+
+          <select id="category"
+                  name="category"
+                  required>
+
+            {% for cat in categories %}
+
+              <option value="{{ cat }}">
+                {{ cat }}
+              </option>
+
+            {% endfor %}
+
+          </select>
+
+
+          <label for="expense_date">
+            Date
+          </label>
+
+          <input
+            id="expense_date"
+            name="expense_date"
+            type="date"
+            value="{{ today }}"
+            required
+          >
+
+
+          <button type="submit"
+                  class="primary">
+            + Add expense
+          </button>
+
+        </form>
+
+      </article>
+
+
+
+      <!-- SPENDING INSIGHTS -->
+
+      <article class="panel insights">
+
+        <div class="section-head">
+
+          <h2>Spending insights</h2>
+
+          <span class="chip">
+            This month
+          </span>
+
+        </div>
+
+
+        {% if category_totals %}
+
+          {% for category, amount in category_totals %}
+
+            <div class="category-line">
+
+              <span>
+                {{ category }}
+              </span>
+
+              <strong>
+                {{ amount | rupees }}
+              </strong>
+
+            </div>
+
+
+            <div class="category-track">
+
+              <div
+                style="width:{{ (amount / total_paise * 100) | round(1) }}%">
+              </div>
+
+            </div>
+
+          {% endfor %}
+
+        {% else %}
+
+          <p class="empty">
+            No expenses this month.
+            Add your first transaction to see insights.
+          </p>
+
+        {% endif %}
+
+
+
+        <!-- SMART ALERT INFORMATION -->
+
+        <div class="alert-info">
+
+          <span>✦</span>
+
+          <p>
+
+            <strong>
+              Smart alerts enabled
+            </strong>
+
+            <br>
+
+            After 3 earlier expenses in the same
+            category, an expense more than 2×
+            their average is flagged.
+
+            It's a simple rule, not AI.
+
+          </p>
+
+        </div>
+
+      </article>
+
+    </section>
+
+
+
+    <!-- TRANSACTION HISTORY -->
+
+    <section class="panel transactions">
+
+      <div class="section-head">
+
+        <div>
+
+          <h2>All transactions</h2>
+
+          <p class="muted">
+            Most recent transactions first ·
+            includes previous months
+          </p>
+
+        </div>
+
+        <span class="chip">
+          {{ expenses | length }} records
+        </span>
+
+      </div>
+
+
+
+      {% if expenses %}
+
+        <div class="table-wrap">
+
+          <table>
+
+            <thead>
+
+              <tr>
+                <th>Description</th>
+                <th>Category</th>
+                <th>Date</th>
+                <th>Amount</th>
+                <th>Actions</th>
+              </tr>
+
+            </thead>
+
+
+            <tbody>
+
+              {% for expense in expenses %}
+
+                <tr>
+
+                  <td>
+
+                    <strong>
+                      {{ expense.title }}
+                    </strong>
+
+                    {% if expense.id in flagged %}
+
+                      <div class="warning">
+                        ⚠ Unusual spending
+                      </div>
+
+                    {% endif %}
+
+                  </td>
+
+
+                  <td>
+
+                    <span class="category-pill">
+                      {{ expense.category }}
+                    </span>
+
+                  </td>
+
+
+                  <td>
+                    {{ expense.expense_date }}
+                  </td>
+
+
+                  <td class="money">
+                    {{ expense.amount_paise | rupees }}
+                  </td>
+
+
+                  <td>
+
+                    <div class="action-row">
+
+                      <button
+                        type="button"
+                        class="link-btn"
+                        onclick="document.getElementById('edit-{{ expense.id }}').showModal()">
+                        Edit
+                      </button>
+
+
+                      <form
+                        action="{{ url_for('delete_expense', expense_id=expense.id) }}"
+                        method="post"
+                        onsubmit="return confirm('Delete this expense?')">
+
+                        <button
+                          type="submit"
+                          class="link-btn danger">
+                          Delete
+                        </button>
+
+                      </form>
+
+                    </div>
+
+                  </td>
+
+                </tr>
+
+              {% endfor %}
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+
+
+        <!-- EDIT TRANSACTION DIALOGS -->
+
+        {% for expense in expenses %}
+
+          <dialog id="edit-{{ expense.id }}">
+
+            <form
+              action="{{ url_for('edit_expense', expense_id=expense.id) }}"
+              method="post"
+              class="expense-form edit-form">
+
+              <h2>Edit expense</h2>
+
+
+              <label>Description</label>
+
+              <input
+                name="title"
+                maxlength="80"
+                value="{{ expense.title }}"
+                required
+              >
+
+
+              <label>Amount (₹)</label>
+
+              <input
+                name="amount"
+                type="number"
+                min="0.01"
+                max="10000000"
+                step="0.01"
+                value="{{ '%.2f' | format(expense.amount_paise / 100) }}"
+                required
+              >
+
+
+              <label>Category</label>
+
+              <select name="category">
+
+                {% for cat in categories %}
+
+                  <option
+                    value="{{ cat }}"
+                    {{ 'selected' if expense.category == cat else '' }}>
+                    {{ cat }}
+                  </option>
+
+                {% endfor %}
+
+              </select>
+
+
+              <label>Date</label>
+
+              <input
+                name="expense_date"
+                type="date"
+                value="{{ expense.expense_date }}"
+                required
+              >
+
+
+              <button
+                type="submit"
+                class="primary">
+                Save changes
+              </button>
+
+
+              <button
+                type="button"
+                class="cancel"
+                onclick="this.closest('dialog').close()">
+                Cancel
+              </button>
+
+            </form>
+
+          </dialog>
+
+        {% endfor %}
+
+
+      {% else %}
+
+        <p class="empty">
+          No transactions yet.
+          Your expenses will appear here.
+        </p>
+
+      {% endif %}
+
+    </section>
+
+
+
+    <!-- FOOTER -->
+
+    <footer>
+      SmartSpend · Portfolio demo ·
+      No real bank data or financial advice
+    </footer>
+
+
+  </main>
+
+</div>
+
+</body>
+</html>
