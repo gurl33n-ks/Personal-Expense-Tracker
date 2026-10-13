@@ -1,141 +1,229 @@
 # Personal Expense Tracker
 
-A full-stack web application built with Python, Flask, and SQLite to help users manage expenses, track monthly budgets, detect unusual spending patterns, and forecast future expenditure.
+A full-stack financial analytics application developed using Python, Flask, SQLite, and Machine Learning to help users manage expenses, identify unusual transactions, predict monthly expenditure, and understand spending patterns.
 
-The application combines expense management with rule-based financial insights through a clean, responsive interface.
+The application combines persistent transaction management, NLP-based expense categorization, statistical forecasting, and interactive data visualizations in a responsive financial dashboard.
 
-## Features
+## Key Features
 
 ### 1. Expense Management
 - Add, view, edit, and delete expenses.
 - Categorize transactions by spending type.
-- Store transaction records in a SQLite database.
-- Maintain transaction history across browser refreshes.
+- Store and retrieve transactions using SQLite.
+- Maintain expense history across browser refreshes.
+- Validate transaction inputs.
 
-### 2. Spending Anomaly Detection
-- Detect unusually high transactions based on historical spending.
-- Compare each expense with earlier transactions in the same category.
-- Flag expenses exceeding twice the average of at least three earlier category transactions.
-- Display warnings beside unusual transactions.
+### 2. Machine Learning-Based Expense Categorization
+- Automatically suggest expense categories from transaction descriptions.
+- Use TF-IDF vectorization for text feature extraction.
+- Apply a Multinomial Naive Bayes classifier for category prediction.
+- Train and evaluate the model using a labeled financial transaction dataset.
+- Allow users to manually change suggested categories.
 
-### 3. Month-End Spending Forecast
-- Calculate average daily spending.
-- Estimate total expenditure by the end of the current month.
-- Compare predicted spending against the monthly budget.
-- Display alerts when projected expenses exceed the budget.
+### 3. Spending Anomaly Detection
+- Identify unusually large transactions based on historical spending.
+- Compare new expenses with earlier transactions in the same category.
+- Flag transactions exceeding twice the average of at least three previous category expenses.
+- Display unusual spending alerts.
 
-### 4. Budget Management
-- Set and update monthly spending budgets.
-- Monitor monthly expenditure.
-- Calculate a budget health score from 0 to 100.
-- View category-wise spending summaries.
+Anomaly detection uses explainable statistical rules rather than an ML-based fraud detection model.
 
-### 5. User Interface
-- Responsive dashboard built using HTML and CSS.
-- Editorial-inspired design with neutral colors and subtle lavender accents.
-- Interactive forms for expense management.
-- Clear financial summaries and spending alerts.
+### 4. Month-End Spending Forecast
+- Calculate average daily expenditure.
+- Estimate spending through the end of the current month.
+- Compare predicted expenses against the monthly budget.
+- Display warnings when projected spending exceeds the available budget.
 
-## Tech Stack
+### 5. Interactive Financial Analytics
+- Visualize category-wise spending through interactive Plotly donut charts.
+- Analyze historical monthly expenditure with bar charts.
+- Generate financial summaries using Pandas.
+- Display category spending breakdowns and budget utilization.
+
+### 6. Budget Management
+- Set and update monthly budgets.
+- Monitor current monthly expenditure.
+- Calculate a budget health score.
+- Display budget-related insights and warnings.
+
+### 7. Automated Testing
+- Implemented 10 automated tests using Pytest.
+- Verified expense creation, editing, and deletion.
+- Tested input validation and financial calculations.
+- Tested anomaly detection and forecasting logic.
+- Validated ML predictions and the categorization endpoint.
+
+## Technology Stack
 
 | Component | Technology |
-|-----------|------------|
-| Backend | Python |
-| Web Framework | Flask |
+|---|---|
+| Programming Language | Python |
+| Backend Framework | Flask |
 | Database | SQLite |
-| Frontend | HTML, CSS |
+| Frontend | HTML, CSS, JavaScript |
 | Template Engine | Jinja2 |
+| Data Processing | Pandas, NumPy |
+| Machine Learning | Scikit-learn |
+| NLP | TF-IDF |
+| Classification Algorithm | Multinomial Naive Bayes |
+| Data Visualization | Plotly |
+| Dataset Processing | PyArrow |
+| Model Serialization | Joblib |
+| Automated Testing | Pytest |
 | Version Control | Git, GitHub |
 
-## Project Structure
+## Machine Learning Implementation
 
-```text
-Personal-Expense-Tracker/
-│
-├── app.py
-├── requirements.txt
-├── README.md
-├── .gitignore
-│
-├── templates/
-│   └── index.html
-│
-└── static/
-    └── style.css
-```
+### Dataset
 
-The SQLite database is created locally when the application runs.
+The classification model was trained using the Transaction Categorization dataset published on Hugging Face.
 
-## How It Works
+Dataset:
+https://huggingface.co/datasets/mitulshah/transaction-categorization
 
-### Expense Management
+The dataset contains approximately 4.5 million labeled transaction records with transaction descriptions, categories, countries, and currencies.
 
-Users can create, update, and delete expense records.
+A filtered and sampled subset was used for training and evaluation.
 
-Flask handles incoming requests, performs input validation, and executes SQL queries to manage transactions in the SQLite database.
+The dataset is not included in this repository.
 
-### Anomaly Detection
+### Data Preprocessing
 
-The application uses a rule-based detection algorithm.
+The ML training pipeline:
 
-For each transaction:
+1. Reads transaction data from Parquet format.
+2. Filters records using compatible expense categories.
+3. Cleans and normalizes transaction descriptions.
+4. Samples category-specific records.
+5. Removes duplicate and ambiguously labeled descriptions.
+6. Splits the processed data into training and test sets.
 
-1. Retrieve earlier expenses from the same category.
-2. Calculate their average amount when at least three earlier transactions exist.
-3. Compare the new transaction against that average.
-4. Flag the transaction when its amount exceeds twice the historical average.
+### Model Architecture
+
+The classification pipeline uses:
+
+- TF-IDF vectorization with character n-grams.
+- Multinomial Naive Bayes for expense category classification.
+- Scikit-learn Pipeline for preprocessing and prediction.
+
+The application supports the following expense categories:
+
+- Food
+- Transport
+- Shopping
+- Bills
+- Entertainment
+- Health
+- Other (manual category)
+
+### Model Evaluation
+
+The trained classifier produced the following results on a held-out subset of the transaction dataset.
+
+| Metric | Result |
+|---|---:|
+| Processed records | 8,555 |
+| Training records | 6,844 |
+| Testing records | 1,711 |
+| Test accuracy | 97.66% |
+| Weighted F1-score | 0.976 |
+
+These metrics describe performance on the sampled dataset, not verified performance on real-world banking transactions.
+
+Because the dataset contains generated or curated transaction descriptions, predictions may be less accurate on unfamiliar merchants, inconsistent descriptions, or real banking data.
+
+The ML model provides category suggestions that users can manually correct.
+
+## Spending Anomaly Detection
+
+The application uses rule-based anomaly detection.
+
+For a new transaction:
+
+1. Retrieve earlier expenses belonging to the same category.
+2. Calculate the historical average when at least three earlier transactions exist.
+3. Compare the transaction amount with the historical average.
+4. Flag the expense if it exceeds twice that average.
 
 Example:
 
-Previous food expenses:
-- Breakfast: Rs. 200
-- Lunch: Rs. 250
-- Snacks: Rs. 300
+| Transaction | Amount |
+|---|---:|
+| Breakfast | ₹200 |
+| Lunch | ₹250 |
+| Snacks | ₹300 |
+| New restaurant expense | ₹1,500 |
 
-Average spending = Rs. 250
+Historical average = ₹250
 
-A new food expense of Rs. 1,500 exceeds twice the average and is flagged as unusual.
+Anomaly threshold = ₹500
 
-### Spending Forecast
+The ₹1,500 transaction is flagged as unusual.
+
+This is a spending alert, not a determination that a transaction is fraudulent.
+
+## Spending Forecasting
 
 The application estimates month-end expenditure using average daily spending.
 
-Formula:
+Average Daily Spending:
 
-```text
-Average Daily Spending =
-Total Monthly Expenses / Days Elapsed
+    Total Spending This Month / Days Elapsed
 
-Projected Month-End Spending =
-Average Daily Spending × Days in Month
-```
+Projected Month-End Spending:
+
+    Average Daily Spending × Total Days in Month
 
 Example:
 
-```text
-Monthly spending so far: Rs. 2,250
-Days elapsed: 8
-Days in month: 31
+    Monthly spending so far: ₹2,250
+    Days elapsed: 8
+    Days in month: 31
 
-Average daily spending = Rs. 281.25
+    Average daily spending: ₹281.25
+    Projected month-end spending: ₹8,718.75
 
-Projected spending = Rs. 8,718.75
-```
+The projected expenditure is compared with the user's monthly budget to identify potential overspending.
 
-If projected spending exceeds the monthly budget, the application displays a warning.
+This is a statistical projection rather than a machine learning forecasting model.
 
-This is a simple statistical projection, not a machine learning model.
+## Budget Health Score
 
-### Budget Health Score
+The budget health score is calculated using the proportion of the monthly budget remaining.
 
-The application calculates a score based on the proportion of the monthly budget remaining.
+    Score = max(
+        0,
+        round(100 × (1 - Monthly Spending / Monthly Budget))
+    )
 
-```text
-Budget Health Score =
-max(0, round(100 × (1 - Monthly Spending / Monthly Budget)))
-```
+A higher score indicates a greater proportion of the monthly budget remains.
 
-A higher score indicates more of the monthly budget remains.
+## Project Structure
+
+    Personal-Expense-Tracker/
+    |
+    |-- app.py
+    |-- ml_model.py
+    |-- train_model.py
+    |-- requirements.txt
+    |-- README.md
+    |-- .gitignore
+    |
+    |-- templates/
+    |   |-- index.html
+    |
+    |-- static/
+    |   |-- style.css
+    |
+    |-- tests/
+    |   |-- test_app.py
+    |
+    |-- data/                     (not included)
+    |   |-- transactions.parquet
+    |
+    |-- models/                   (generated locally)
+        |-- expense_classifier.joblib
+        |-- evaluation.json
 
 ## Installation and Setup
 
@@ -145,7 +233,7 @@ A higher score indicates more of the monthly budget remains.
 git clone https://github.com/gurl33n-ks/Personal-Expense-Tracker.git
 ```
 
-### 2. Navigate to the Project Folder
+### 2. Open the Project Directory
 
 ```bash
 cd Personal-Expense-Tracker
@@ -157,7 +245,7 @@ cd Personal-Expense-Tracker
 python3 -m venv .venv
 ```
 
-### 4. Activate the Virtual Environment
+### 4. Activate the Environment
 
 macOS/Linux:
 
@@ -167,8 +255,8 @@ source .venv/bin/activate
 
 Windows:
 
-```bash
-.venv\Scripts\activate
+```powershell
+.venv\Scripts\Activate.ps1
 ```
 
 ### 5. Install Dependencies
@@ -183,61 +271,120 @@ python -m pip install -r requirements.txt
 python app.py
 ```
 
-### 7. Open the Application
+### 7. Open the Dashboard
 
 Visit:
 
 http://127.0.0.1:5000/
 
+The application creates and uses a local SQLite database.
+
+The application can run without the dataset-trained model by using its built-in demonstration classifier.
+
+## Training the Dataset-Based ML Model
+
+To reproduce the enhanced machine learning model:
+
+1. Visit the dataset page:
+
+   https://huggingface.co/datasets/mitulshah/transaction-categorization
+
+2. Download the Parquet training file.
+
+3. Create a folder named `data` in the project directory.
+
+4. Rename the downloaded file to `transactions.parquet`.
+
+5. Place the file inside the `data` folder.
+
+6. Run:
+
+```bash
+python train_model.py
+```
+
+The script trains the classification model and generates:
+
+    models/expense_classifier.joblib
+    models/evaluation.json
+
+Restart the Flask application to load the trained model.
+
+The model file is intended to be generated locally from the downloaded dataset.
+
+## Automated Testing
+
+Run the test suite using:
+
+```bash
+python -m pytest tests/ -v
+```
+
+Latest local test result:
+
+    10 passed
+
+The tests validate core functionality and API behavior. They do not independently establish the ML model's real-world accuracy.
+
 ## Screenshots
 
-### Dashboard
+### Financial Dashboard
 
-Screenshot coming soon.
+Screenshot to be added.
 
-### Spending Forecast
+### Spending Analytics
 
-Screenshot coming soon.
+Screenshot to be added.
 
-### Anomaly Detection
+### ML Category Prediction
 
-Screenshot coming soon.
+Screenshot to be added.
 
 ## Technical Concepts Demonstrated
 
 - Full-stack web application development
-- REST-style request handling with Flask
-- SQLite database integration
-- CRUD operations
-- SQL queries and data persistence
-- Input validation and error handling
-- Rule-based anomaly detection
-- Financial forecasting calculations
-- Responsive web interface development
-- Git version control
+- Python and Flask backend programming
+- Relational database integration
+- SQL and CRUD operations
+- Input validation
+- NLP-based text classification
+- TF-IDF feature extraction
+- Machine learning model training
+- Train-test evaluation
+- Accuracy and F1-score measurement
+- Data preprocessing with Pandas and NumPy
+- Interactive Plotly visualizations
+- Financial anomaly detection
+- Statistical expenditure forecasting
+- Automated testing with Pytest
+- Git and GitHub version control
 
 ## Limitations
 
-- The application is currently designed for local use.
-- It does not connect to real banking systems.
-- The anomaly detection algorithm uses predefined rules rather than machine learning.
-- Spending forecasts assume the current average daily spending rate continues throughout the month.
+- The application is primarily designed for local use.
+- The application does not connect to real banking systems.
+- The ML model is trained using a curated transaction dataset.
+- High held-out test accuracy does not guarantee equivalent performance on real financial transactions.
+- Spending anomaly detection relies on historical comparison rules.
+- Month-end forecasting assumes the current average daily spending rate continues throughout the month.
 - User authentication and multi-user account management are not implemented.
+- The application is an educational portfolio project, not a production banking system.
 
 ## Future Improvements
 
-- User authentication
-- Interactive spending charts
+- Secure user authentication and authorization
+- Transaction search and advanced filters
 - CSV transaction export
-- Category-specific spending limits
-- Historical spending comparisons
+- Category-specific budget management
+- More representative ML training data
+- Additional model evaluation and error analysis
+- Automated deployment and CI/CD
 
 ## Author
 
-Gurleen Kaur Sawhney
+**Gurleen Kaur Sawhney**
 
 GitHub: https://github.com/gurl33n-ks
 
----
 
-This project was developed for educational and portfolio purposes. It does not provide financial advice.
+
