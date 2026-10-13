@@ -6,3 +6,5 @@ __pycache__/
 smartspend.db
 .env
 .DS_Store
+data/
+models/

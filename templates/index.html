@@ -298,6 +298,34 @@
 
     </section>
 
+<!-- INTERACTIVE SPENDING ANALYTICS -->
+
+<section class="analytics-section">
+
+  <div class="analytics-heading">
+    <p class="metric-label">FINANCIAL ANALYTICS</p>
+    <h2>Understand your spending</h2>
+    <p class="muted">
+      Explore your expenses by category and month.
+    </p>
+  </div>
+
+  <div class="analytics-grid">
+
+    <article class="panel analytics-card">
+      <h3>Category breakdown</h3>
+      <div id="categoryChart"></div>
+    </article>
+
+    <article class="panel analytics-card">
+      <h3>Monthly spending</h3>
+      <div id="monthlyChart"></div>
+    </article>
+
+  </div>
+
+</section>
+
 
     <!-- EXPENSE FORM AND SPENDING INSIGHTS -->
 
@@ -724,7 +752,37 @@
   </main>
 
 </div>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+  const categoryChart = {{ category_chart | tojson }};
+  const monthlyChart = {{ monthly_chart | tojson }};
+
+  function drawChart(elementId, chartJSON) {
+    if (!chartJSON || typeof Plotly === "undefined") {
+      return;
+    }
+
+    const figure = JSON.parse(chartJSON);
+
+    Plotly.newPlot(
+      elementId,
+      figure.data,
+      figure.layout,
+      {
+        responsive: true,
+        displayModeBar: false
+      }
+    );
+  }
+
+  drawChart("categoryChart", categoryChart);
+  drawChart("monthlyChart", monthlyChart);
+
+});
+</script>
 </body>
 <script>
   document.addEventListener("DOMContentLoaded", () => {

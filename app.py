@@ -1,3 +1,5 @@
+import pandas as pd 
+import plotly.express as px
 from datetime import date
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -273,6 +275,137 @@ def index():
         today
     )
 
+# ---------------------------------------
+    # INTERACTIVE SPENDING ANALYTICS
+    # ---------------------------------------
+
+    chart_expenses = [
+        {
+            "category": item["category"],
+            "amount": item["amount_paise"] / 100,
+            "date": item["expense_date"]
+        }
+        for item in expenses
+    ]
+
+    category_chart = None
+    monthly_chart = None
+
+    if chart_expenses:
+        df = pd.DataFrame(chart_expenses)
+
+        df["date"] = pd.to_datetime(
+            df["date"],
+            errors="coerce"
+        )
+
+        df = df.dropna(subset=["date"])
+
+        # Category-wise spending
+        category_data = (
+            df.groupby("category", as_index=False)["amount"]
+            .sum()
+        )
+
+        fig_category = px.pie(
+            category_data,
+            names="category",
+            values="amount",
+            hole=0.58,
+            title="Spending by Category",
+            color_discrete_sequence=[
+                "#73617D",
+                "#BBA7C6",
+                "#D9C5D3",
+                "#E8DCCF",
+                "#A8B9AD",
+                "#D8A8A8"
+            ]
+        )
+
+        fig_category.update_layout(
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(
+                family="Arial",
+                color="#302D32"
+            ),
+            margin=dict(l=20, r=20, t=60, b=20),
+            height=350
+        )
+
+        category_chart = fig_category.to_json()
+
+        # Monthly spending trend
+        df["month"] = (
+            df["date"].dt.to_period("M").astype(str)
+        )
+
+        monthly_data = (
+            df.groupby("month", as_index=False)["amount"]
+            .sum()
+            .sort_values("month")
+        )
+        monthly_data["month"] = pd.to_datetime(
+            monthly_data["month"],
+            format="%Y-%m"
+        ).dt.strftime("%b %Y")
+
+        fig_monthly = px.bar(
+            monthly_data,
+            x="month",
+            y="amount",
+            title="Monthly Spending Trend",
+            labels={
+                "month": "Month",
+                "amount": "Spending (₹)"
+            },
+            color_discrete_sequence=["#73617D"]
+        )
+
+        fig_monthly.update_traces(
+            width=0.45,
+            marker_line_width=0,
+            hovertemplate=(
+                "<b>%{x}</b>"
+                "<br>Spending: ₹%{y:,.2f}"
+                "<extra></extra>"
+            )
+        )
+
+        fig_monthly.update_xaxes(
+            type="category",
+            tickangle=0,
+            showgrid=False
+        )
+
+        fig_monthly.update_yaxes(
+            tickprefix="₹",
+            tickformat=",.0f",
+            gridcolor="#EAE5E1",
+            zeroline=False
+        )
+
+        fig_monthly.update_layout(
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(
+                family="Arial",
+                color="#302D32"
+            ),
+            margin=dict(
+                l=55,
+                r=20,
+                t=60,
+                b=50
+            ),
+            height=350,
+            bargap=0.55,
+            showlegend=False
+        )
+
+        monthly_chart = fig_monthly.to_json()
+
     return render_template(
         "index.html",
         expenses=expenses,
@@ -284,7 +417,9 @@ def index():
         categories=CATEGORIES,
         today=today.isoformat(),
         month=today.strftime("%B %Y"),
-        **forecast
+        **forecast,
+        category_chart=category_chart,
+        monthly_chart=monthly_chart
     )
 
 

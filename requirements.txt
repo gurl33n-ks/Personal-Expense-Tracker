@@ -1,3 +1,8 @@
 Flask>=3.0,<4.0
 scikit-learn
 pytest
+pandas
+numpy
+plotly
+pyarrow
+joblib
